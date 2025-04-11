@@ -4,4 +4,4 @@ database:
   user: "postgres"
   password: "kosty8021"
   dbname: "MedicalClinic"
-  sslmode: "disable"  # для разработки
+  sslmode: "disable"
