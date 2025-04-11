@@ -1,5 +1,7 @@
 package config
 
+import "fmt"
+
 type DatabaseConfig struct {
 	Host     string `yaml:"host"`
 	Port     int    `yaml:"port"`
