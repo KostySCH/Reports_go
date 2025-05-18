@@ -2,37 +2,63 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"database/sql"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
+	"github.com/KostySCH/Reports_go/reports_generator/internal/config"
 	"github.com/KostySCH/Reports_go/reports_generator/internal/repository"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/KostySCH/Reports_go/reports_generator/internal/service"
+	"github.com/KostySCH/Reports_go/reports_generator/internal/worker"
 )
 
 func main() {
-	connStr := "postgres://postgres:kosty8021@localhost:5432/MedicalClinic?sslmode=disable"
-	pool, err := pgxpool.New(context.Background(), connStr)
+	// Загружаем конфигурацию
+	cfg := config.Load()
+
+	// Инициализируем подключение к базе данных
+	db, err := sql.Open("postgres", cfg.GetDSN())
 	if err != nil {
-		log.Fatalf("Not connect: %v\n", err)
+		log.Fatalf("Ошибка подключения к базе данных: %v", err)
 	}
-	defer pool.Close()
+	defer db.Close()
 
-	repo := repository.NewPostgresRepo(pool)
-
-	ids, err := repo.GetUserIDs(context.Background())
+	// Инициализируем MinIO сервис
+	minioSvc, err := service.NewMinioService(
+		cfg.MinIO.Endpoint,
+		cfg.MinIO.AccessKey,
+		cfg.MinIO.SecretKey,
+		cfg.MinIO.PDFBucket,
+		cfg.MinIO.DOCXBucket,
+		cfg.MinIO.UseSSL,
+	)
 	if err != nil {
-		log.Fatalf("Error get user id: %v\n", err)
+		log.Fatalf("Ошибка инициализации MinIO: %v", err)
 	}
 
-	if len(ids) == 0 {
-		fmt.Println("404")
-		os.Exit(0)
-	}
+	// Инициализируем репозиторий и сервисы
+	repo := repository.NewReportRequestRepository(db)
+	reportSvc := service.NewReportService(db, "output", minioSvc)
 
-	fmt.Println("User id:")
-	for _, id := range ids {
-		fmt.Printf("%d ", id)
-	}
-	fmt.Println()
+	// Создаем и запускаем воркеры
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	mainWorker := worker.NewWorker(repo, reportSvc, 10)
+	retryWorker := worker.NewRetryWorker(repo, reportSvc)
+
+	mainWorker.Start(ctx)
+	retryWorker.Start(ctx)
+
+	// Ждем сигнала для завершения
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
+
+	log.Println("Получен сигнал завершения, останавливаем воркеры...")
+	cancel()
+	time.Sleep(time.Second) // Даем время на graceful shutdown
 }

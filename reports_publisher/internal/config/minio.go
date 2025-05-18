@@ -9,7 +9,7 @@ type MinioConfig struct {
 
 func Load() *MinioConfig {
 	return &MinioConfig{
-		Endpoint:  "localhost:9000",
+		Endpoint:  "localhost:9001",
 		AccessKey: "minioadmin",
 		SecretKey: "minioadmin",
 		UseSSL:    false,

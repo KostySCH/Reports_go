@@ -1,0 +1,121 @@
+basePath: /api
+definitions:
+  handler.CreateReportRequest:
+    properties:
+      params:
+        $ref: '#/definitions/handler.ReportParams'
+      type:
+        example: daily_report
+        type: string
+      user_id:
+        example: "123"
+        type: string
+    required:
+    - params
+    - type
+    - user_id
+    type: object
+  handler.ReportParams:
+    properties:
+      date:
+        example: "2024-03-20"
+        type: string
+      format:
+        example: pdf
+        type: string
+    type: object
+  model.ReportRequest:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      params:
+        description: JSONB в PostgreSQL
+        items:
+          type: integer
+        type: array
+      status:
+        $ref: '#/definitions/model.ReportStatus'
+      type:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  model.ReportStatus:
+    enum:
+    - PENDING
+    - IN_PROGRESS
+    - COMPLETED
+    - FAILED
+    type: string
+    x-enum-varnames:
+    - StatusPending
+    - StatusInProgress
+    - StatusCompleted
+    - StatusFailed
+host: localhost:8080
+info:
+  contact: {}
+  description: API для генерации отчетов
+  title: Reports API
+  version: "1.0"
+paths:
+  /api/reports:
+    post:
+      consumes:
+      - application/json
+      description: Создает новый запрос на генерацию отчета
+      parameters:
+      - description: Параметры запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.ReportRequest'
+        "400":
+          description: Invalid request body
+          schema:
+            type: string
+        "500":
+          description: Failed to create report request
+          schema:
+            type: string
+      summary: Создать новый запрос на отчет
+      tags:
+      - reports
+  /api/reports/{id}/status:
+    get:
+      consumes:
+      - application/json
+      description: Получает текущий статус запроса на отчет
+      parameters:
+      - description: ID отчета
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.ReportRequest'
+        "404":
+          description: Report not found
+          schema:
+            type: string
+      summary: Получить статус отчета
+      tags:
+      - reports
+swagger: "2.0"

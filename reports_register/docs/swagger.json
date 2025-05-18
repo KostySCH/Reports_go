@@ -1,0 +1,178 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API для генерации отчетов",
+        "title": "Reports API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api",
+    "paths": {
+        "/api/reports": {
+            "post": {
+                "description": "Создает новый запрос на генерацию отчета",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "reports"
+                ],
+                "summary": "Создать новый запрос на отчет",
+                "parameters": [
+                    {
+                        "description": "Параметры запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.CreateReportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ReportRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create report request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/reports/{id}/status": {
+            "get": {
+                "description": "Получает текущий статус запроса на отчет",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "reports"
+                ],
+                "summary": "Получить статус отчета",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID отчета",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ReportRequest"
+                        }
+                    },
+                    "404": {
+                        "description": "Report not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handler.CreateReportRequest": {
+            "type": "object",
+            "required": [
+                "params",
+                "type",
+                "user_id"
+            ],
+            "properties": {
+                "params": {
+                    "$ref": "#/definitions/handler.ReportParams"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "daily_report"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "123"
+                }
+            }
+        },
+        "handler.ReportParams": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "example": "2024-03-20"
+                },
+                "format": {
+                    "type": "string",
+                    "example": "pdf"
+                }
+            }
+        },
+        "model.ReportRequest": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "params": {
+                    "description": "JSONB в PostgreSQL",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "status": {
+                    "$ref": "#/definitions/model.ReportStatus"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.ReportStatus": {
+            "type": "string",
+            "enum": [
+                "PENDING",
+                "IN_PROGRESS",
+                "COMPLETED",
+                "FAILED"
+            ],
+            "x-enum-varnames": [
+                "StatusPending",
+                "StatusInProgress",
+                "StatusCompleted",
+                "StatusFailed"
+            ]
+        }
+    }
+}

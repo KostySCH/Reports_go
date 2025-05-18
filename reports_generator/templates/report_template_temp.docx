@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?mso-application progid="Word.Document"?>
+<w:wordDocument xmlns:w="http://schemas.microsoft.com/office/word/2003/wordml">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:t>Отчет по эффективности филиала</w:t>
+      </w:r>
+    </w:p>
+    
+    <w:p>
+      <w:r>
+        <w:t>Информация о филиале:</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>ID: {{branch_id}}</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Название: {{branch_name}}</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Адрес: {{branch_location}}</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Телефон: {{branch_phone}}</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Email: {{branch_email}}</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Менеджер: {{branch_manager}}</w:t>
+      </w:r>
+    </w:p>
+
+    <w:p>
+      <w:r>
+        <w:t>Статистика клиентов:</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Всего клиентов: {{total_customers}}</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Всего счетов: {{total_accounts}}</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Активных счетов: {{active_accounts}}</w:t>
+      </w:r>
+    </w:p>
+
+    <w:p>
+      <w:r>
+        <w:t>Статистика транзакций:</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Всего транзакций: {{total_transactions}}</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Общая сумма: {{total_amount}}</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:t>Средняя сумма: {{average_amount}}</w:t>
+      </w:r>
+    </w:p>
+
+    <w:p>
+      <w:r>
+        <w:t>Ежедневная активность:</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl>
+      <w:tr>
+        <w:tc>
+          <w:p>
+            <w:r>
+              <w:t>Дата</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:p>
+            <w:r>
+              <w:t>Транзакции</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:p>
+            <w:r>
+              <w:t>Сумма</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:p>
+            <w:r>
+              <w:t>Рост</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      {{activity_rows}}
+    </w:tbl>
+
+    <w:p>
+      <w:r>
+        <w:t>Топ клиентов:</w:t>
+      </w:r>
+    </w:p>
+    <w:tbl>
+      <w:tr>
+        <w:tc>
+          <w:p>
+            <w:r>
+              <w:t>Имя</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:p>
+            <w:r>
+              <w:t>Транзакции</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+        <w:tc>
+          <w:p>
+            <w:r>
+              <w:t>Сумма</w:t>
+            </w:r>
+          </w:p>
+        </w:tc>
+      </w:tr>
+      {{customer_rows}}
+    </w:tbl>
+  </w:body>
+</w:wordDocument> 
