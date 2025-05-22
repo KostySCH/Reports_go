@@ -13,6 +13,7 @@ import (
 	"github.com/KostySCH/Reports_go/reports_generator/internal/repository"
 	"github.com/KostySCH/Reports_go/reports_generator/internal/service"
 	"github.com/KostySCH/Reports_go/reports_generator/internal/worker"
+	_ "github.com/lib/pq" // PostgreSQL драйвер
 )
 
 func main() {

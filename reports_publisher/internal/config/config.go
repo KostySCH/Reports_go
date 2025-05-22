@@ -3,21 +3,21 @@ package config
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
-	"gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
 	Database struct {
 		Host     string `yaml:"host"`
-		Port     string `yaml:"port"`
+		Port     int    `yaml:"port"`
 		User     string `yaml:"user"`
 		Password string `yaml:"password"`
 		DBName   string `yaml:"dbname"`
 		SSLMode  string `yaml:"sslmode"`
 	} `yaml:"database"`
-	MinIO struct {
+
+	Minio struct {
 		Endpoint   string `yaml:"endpoint"`
 		AccessKey  string `yaml:"access_key"`
 		SecretKey  string `yaml:"secret_key"`
@@ -25,66 +25,47 @@ type Config struct {
 		DOCXBucket string `yaml:"docx_bucket"`
 		UseSSL     bool   `yaml:"use_ssl"`
 	} `yaml:"minio"`
+
+	Kafka struct {
+		Brokers []string `yaml:"brokers"`
+		Topic   string   `yaml:"topic"`
+	} `yaml:"kafka"`
 }
 
-func Load() *Config {
+func LoadConfig(configPath string) (*Config, error) {
 	config := &Config{}
 
-	workDir, err := os.Getwd()
+	file, err := os.ReadFile(configPath)
 	if err != nil {
-		fmt.Printf("Error getting working directory: %v\n", err)
-		return getDefaultConfig()
+		return nil, fmt.Errorf("ошибка чтения файла конфигурации: %w", err)
 	}
 
-	configPaths := []string{
-		filepath.Join(workDir, "config.yaml"),
-		filepath.Join(workDir, "config", "config.yaml"),
-		filepath.Join(workDir, "..", "config", "config.yaml"),
-		filepath.Join(workDir, "..", "..", "config", "config.yaml"),
+	err = yaml.Unmarshal(file, config)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка разбора файла конфигурации: %w", err)
 	}
 
-	var configData []byte
-	for _, path := range configPaths {
-		data, err := os.ReadFile(path)
-		if err == nil {
-			configData = data
-			fmt.Printf("Found config file at: %s\n", path)
-			break
-		}
-	}
-
-	if configData == nil {
-		fmt.Printf("Config file not found in any of the expected locations\n")
-		return getDefaultConfig()
-	}
-
-	// Парсим YAML
-	if err := yaml.Unmarshal(configData, config); err != nil {
-		fmt.Printf("Error parsing config file: %v\n", err)
-		return getDefaultConfig()
-	}
-
-	return config
+	return config, nil
 }
 
 func getDefaultConfig() *Config {
 	return &Config{
 		Database: struct {
 			Host     string `yaml:"host"`
-			Port     string `yaml:"port"`
+			Port     int    `yaml:"port"`
 			User     string `yaml:"user"`
 			Password string `yaml:"password"`
 			DBName   string `yaml:"dbname"`
 			SSLMode  string `yaml:"sslmode"`
 		}{
 			Host:     "localhost",
-			Port:     "5432",
+			Port:     5432,
 			User:     "postgres",
 			Password: "postgres",
 			DBName:   "reports_db",
 			SSLMode:  "disable",
 		},
-		MinIO: struct {
+		Minio: struct {
 			Endpoint   string `yaml:"endpoint"`
 			AccessKey  string `yaml:"access_key"`
 			SecretKey  string `yaml:"secret_key"`
@@ -99,15 +80,12 @@ func getDefaultConfig() *Config {
 			DOCXBucket: "reports-docx",
 			UseSSL:     false,
 		},
+		Kafka: struct {
+			Brokers []string `yaml:"brokers"`
+			Topic   string   `yaml:"topic"`
+		}{
+			Brokers: []string{"localhost:9092"},
+			Topic:   "report-notifications",
+		},
 	}
-}
-
-func (c *Config) GetDSN() string {
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		c.Database.Host,
-		c.Database.Port,
-		c.Database.User,
-		c.Database.Password,
-		c.Database.DBName,
-		c.Database.SSLMode)
 }

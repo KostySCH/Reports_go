@@ -23,13 +23,12 @@ func NewReportService(db *sql.DB, outputDir string, minioSvc *MinioService) *Rep
 }
 
 func (s *ReportService) GenerateBranchPerformanceReport(ctx context.Context, params *models.BranchPerformanceParams) (string, error) {
-	// Генерируем отчет
+
 	reportPath, err := s.generateReport(ctx, params)
 	if err != nil {
 		return "", err
 	}
 
-	// Загружаем отчет в MinIO
 	minioPath, err := s.minioSvc.UploadReport(ctx, reportPath, fmt.Sprintf("%d", params.BranchID))
 	if err != nil {
 		return "", fmt.Errorf("ошибка загрузки отчета в MinIO: %v", err)
@@ -39,10 +38,9 @@ func (s *ReportService) GenerateBranchPerformanceReport(ctx context.Context, par
 }
 
 func (s *ReportService) generateReport(ctx context.Context, params *models.BranchPerformanceParams) (string, error) {
-	// Преобразуем месяц в полную дату (первый день месяца)
+
 	fullDate := params.Month + "-01"
 
-	// Получаем информацию о филиале
 	branchInfo, err := s.getBranchInfo(ctx, params.BranchID)
 	if err != nil {
 		return "", fmt.Errorf("ошибка получения информации о филиале: %v", err)

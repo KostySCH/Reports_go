@@ -19,7 +19,6 @@ func NewReportRequestRepository(db *sql.DB) *ReportRequestRepository {
 	return &ReportRequestRepository{db: db}
 }
 
-// DB возвращает соединение с базой данных
 func (r *ReportRequestRepository) DB() *sql.DB {
 	return r.db
 }
@@ -31,7 +30,6 @@ func (r *ReportRequestRepository) GetPendingRequests(ctx context.Context, limit 
 	}
 	defer tx.Rollback()
 
-	// Получаем запросы и блокируем их для обновления
 	query := `
 		SELECT id, user_id, type, params, status, created_at, updated_at, error, retry_count, report_path
 		FROM reporting.report_requests
@@ -71,7 +69,6 @@ func (r *ReportRequestRepository) GetPendingRequests(ctx context.Context, limit 
 		return nil, err
 	}
 
-	// Обновляем статус запросов на IN_PROGRESS
 	if len(requests) > 0 {
 		ids := make([]uuid.UUID, len(requests))
 		for i, req := range requests {
@@ -108,13 +105,42 @@ func (r *ReportRequestRepository) GetPendingRequests(ctx context.Context, limit 
 }
 
 func (r *ReportRequestRepository) UpdateRequestStatus(ctx context.Context, id uuid.UUID, status string, errorMsg *string, reportPath *string) error {
+	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	query := `
+		SELECT status 
+		FROM reporting.report_requests 
+		WHERE id = $1 
+		FOR UPDATE SKIP LOCKED
+	`
+	var currentStatus string
+	err = tx.QueryRowContext(ctx, query, id).Scan(&currentStatus)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("запрос не найден: %s", id)
+		}
+		return err
+	}
+
+	if currentStatus == models.StatusCompleted || currentStatus == models.StatusFailed {
+		return nil
+	}
+
+	updateQuery := `
 		UPDATE reporting.report_requests
 		SET status = $1, error = $2, report_path = $3, updated_at = $4
 		WHERE id = $5
 	`
-	_, err := r.db.ExecContext(ctx, query, status, errorMsg, reportPath, time.Now(), id)
-	return err
+	_, err = tx.ExecContext(ctx, updateQuery, status, errorMsg, reportPath, time.Now(), id)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (r *ReportRequestRepository) IncrementRetryCount(ctx context.Context, id uuid.UUID) error {

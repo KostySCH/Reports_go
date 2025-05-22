@@ -32,19 +32,17 @@ func NewWorker(repo *repository.ReportRequestRepository, reportSvc *service.Repo
 		reportSvc:   reportSvc,
 		done:        make(chan struct{}),
 		concurrency: concurrency,
-		workerID:    1, // ID для основного воркера
+		workerID:    1,
 	}
 }
 
 func (w *Worker) Start(ctx context.Context) {
 	logger.LogWorkerEvent(mainWorkerType, w.workerID, fmt.Sprintf("Запуск воркера с параллельностью %d", w.concurrency))
 
-	// Запускаем горутины для обработки запросов
 	for i := 0; i < w.concurrency; i++ {
 		go w.processRequests(ctx)
 	}
 
-	// Мониторим контекст для graceful shutdown
 	go func() {
 		<-ctx.Done()
 		w.Stop()
@@ -66,7 +64,7 @@ func (w *Worker) processRequests(ctx context.Context) {
 		case <-w.done:
 			return
 		default:
-			// Получаем запросы на обработку
+
 			requests, err := w.repo.GetPendingRequests(ctx, w.concurrency)
 			if err != nil {
 				logger.LogWorkerError(mainWorkerType, w.workerID, fmt.Errorf("ошибка получения запросов: %v", err))
@@ -79,7 +77,6 @@ func (w *Worker) processRequests(ctx context.Context) {
 				continue
 			}
 
-			// Обрабатываем каждый запрос
 			for _, req := range requests {
 				if err := w.processRequest(ctx, req); err != nil {
 					errorMsg := err.Error()
@@ -97,19 +94,18 @@ func (w *Worker) processRequests(ctx context.Context) {
 }
 
 func (w *Worker) processRequest(ctx context.Context, req *models.ReportRequest) error {
-	// Парсим параметры запроса
+
 	var params map[string]interface{}
 	if err := json.Unmarshal(req.Params, &params); err != nil {
 		return fmt.Errorf("ошибка разбора параметров: %v", err)
 	}
 
-	// Генерируем отчет в зависимости от типа
 	var reportPath string
 	var err error
 
 	switch req.Type {
 	case "branch_performance_report":
-		// Проверяем наличие всех необходимых параметров
+
 		branchID, ok := params["branch_id"]
 		if !ok {
 			return fmt.Errorf("отсутствует обязательный параметр branch_id")
@@ -123,7 +119,6 @@ func (w *Worker) processRequest(ctx context.Context, req *models.ReportRequest) 
 			return fmt.Errorf("отсутствует обязательный параметр format")
 		}
 
-		// Преобразуем параметры в нужный формат
 		branchParams := &models.BranchPerformanceParams{
 			BranchID: int64(branchID.(float64)),
 			Month:    month.(string),
@@ -138,6 +133,5 @@ func (w *Worker) processRequest(ctx context.Context, req *models.ReportRequest) 
 		return fmt.Errorf("ошибка генерации отчета: %v", err)
 	}
 
-	// Обновляем статус запроса
 	return w.repo.UpdateRequestStatus(ctx, req.ID, models.StatusCompleted, nil, &reportPath)
 }

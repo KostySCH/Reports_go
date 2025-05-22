@@ -30,20 +30,18 @@ func NewRetryWorker(repo *repository.ReportRequestRepository, reportSvc *service
 		repo:        repo,
 		reportSvc:   reportSvc,
 		pollPeriod:  30 * time.Second,
-		workerID:    2,  // ID для воркера повторной обработки
-		concurrency: 10, // Добавляем параллельность 10
+		workerID:    2,
+		concurrency: 10,
 	}
 }
 
 func (w *RetryWorker) Start(ctx context.Context) {
 	logger.LogWorkerEvent(workerType, w.workerID, fmt.Sprintf("Запуск воркера с параллельностью %d", w.concurrency))
 
-	// Запускаем горутины для обработки запросов
 	for i := 0; i < w.concurrency; i++ {
 		go w.processFailedReports(ctx)
 	}
 
-	// Мониторим контекст для graceful shutdown
 	<-ctx.Done()
 	logger.LogWorkerEvent(workerType, w.workerID, "Остановка воркера")
 }
@@ -57,7 +55,7 @@ func (w *RetryWorker) processFailedReports(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			// Получаем список неудачных отчетов
+
 			query := `
 				SELECT id, user_id, type, params, status, created_at, updated_at, error, retry_count, report_path
 				FROM reporting.report_requests
@@ -91,13 +89,11 @@ func (w *RetryWorker) processFailedReports(ctx context.Context) {
 					continue
 				}
 
-				// Увеличиваем счетчик попыток
 				if err := w.repo.IncrementRetryCount(ctx, req.ID); err != nil {
 					logger.LogWorkerError(workerType, w.workerID, fmt.Errorf("ошибка обновления счетчика попыток для отчета %s: %v", req.ID, err))
 					continue
 				}
 
-				// Пытаемся сгенерировать отчет заново
 				if err := w.processRequest(ctx, &req); err != nil {
 					errorMsg := err.Error()
 					if err := w.repo.UpdateRequestStatus(ctx, req.ID, models.StatusFailed, &errorMsg, nil); err != nil {
@@ -114,19 +110,18 @@ func (w *RetryWorker) processFailedReports(ctx context.Context) {
 }
 
 func (w *RetryWorker) processRequest(ctx context.Context, req *models.ReportRequest) error {
-	// Парсим параметры запроса
+
 	var params map[string]interface{}
 	if err := json.Unmarshal(req.Params, &params); err != nil {
 		return fmt.Errorf("ошибка разбора параметров: %v", err)
 	}
 
-	// Генерируем отчет в зависимости от типа
 	var reportPath string
 	var err error
 
 	switch req.Type {
 	case "branch_performance_report":
-		// Проверяем наличие всех необходимых параметров
+
 		branchID, ok := params["branch_id"]
 		if !ok {
 			return fmt.Errorf("отсутствует обязательный параметр branch_id")
@@ -140,7 +135,6 @@ func (w *RetryWorker) processRequest(ctx context.Context, req *models.ReportRequ
 			return fmt.Errorf("отсутствует обязательный параметр format")
 		}
 
-		// Преобразуем параметры в нужный формат
 		branchParams := &models.BranchPerformanceParams{
 			BranchID: int64(branchID.(float64)),
 			Month:    month.(string),
@@ -155,6 +149,5 @@ func (w *RetryWorker) processRequest(ctx context.Context, req *models.ReportRequ
 		return fmt.Errorf("ошибка генерации отчета: %v", err)
 	}
 
-	// Обновляем статус запроса
 	return w.repo.UpdateRequestStatus(ctx, req.ID, models.StatusCompleted, nil, &reportPath)
 }
